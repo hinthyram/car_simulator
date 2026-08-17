@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Car Drive Simulator</title>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: 'Noto Sans KR', sans-serif; background: #111; }
+        #canvas-container { width: 100vw; height: 100vh; }
+        
+        /* UI Style */
+        #ui {
+            position: absolute; top: 20px; left: 20px; color: white;
+            background: rgba(0, 0, 0, 0.6); padding: 15px 20px; border-radius: 8px;
+            backdrop-filter: blur(5px); pointer-events: none;
+        }
+        #speedometer { font-size: 28px; font-weight: bold; color: #00e5ff; }
+        .controls-info { margin-top: 10px; font-size: 13px; line-height: 1.6; color: #ccc; }
+        kbd { background: #333; padding: 2px 6px; border-radius: 4px; color: #fff; font-size: 11px; }
+        #ui button { background:#252a2f; color:#fff; border:1px solid #555; border-radius:5px; padding:5px 8px; cursor:pointer; font-size:11px; }
+        #ui button:hover { background:#353b42; }
+    
+        #site-nav{position:fixed;top:14px;right:14px;z-index:30;display:flex;gap:7px;pointer-events:auto}
+        #site-nav button{background:rgba(20,24,29,.82);color:#fff;border:1px solid #555;border-radius:7px;padding:7px 10px;cursor:pointer;backdrop-filter:blur(5px)}
+        #site-nav button:hover{background:#30363d}
+</style>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="site-nav"><button type="button" onclick="location.href='../index.html'">홈</button><button type="button" onclick="location.href='../pages/map-select.html'">맵 선택</button></div>
+
+    <!-- UI Layout -->
+    <div id="ui">
+        <div id="speedometer">0 KM/H</div>
+        <div class="controls-info">
+            <p><kbd>W</kbd> / <kbd>↑</kbd> : 가속</p>
+            <p><kbd>S</kbd> / <kbd>↓</kbd> : 브레이크</p>
+            <p><kbd>A</kbd> / <kbd>D</kbd> : 좌/우 조향</p>
+            <p><kbd>Q</kbd> / <kbd>E</kbd> : P / R / N / D 변속</p>
+            <p><kbd>Space</kbd> : 핸드브레이크</p>
+            <div id="terrainMode" style="margin-top:10px;font-size:12px;color:#8ee6ff"></div>
+            <div style="display:flex;gap:6px;margin-top:8px;pointer-events:auto">
+                <button id="flatFieldBtn" type="button">평지</button>
+                <button id="slopeFieldBtn" type="button">오르막/내리막</button>
+            </div>
+        </div>
+    </div>
+    <div id="canvas-container"></div>
+
+    <script type="module" src="../js/simulator/simulator.js"></script>
+
+<style>
+
+#etvcHud{position:fixed;right:20px;top:20px;z-index:60;width:330px;min-width:330px;max-width:330px;box-sizing:border-box;padding:14px 16px;color:#fff;background:rgba(8,8,8,.86);border:1px solid rgba(255,255,255,.24);border-radius:12px;font:12px Arial,sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.24);user-select:none;overflow:hidden}
+#etvcHud *{box-sizing:border-box}
+#etvcHud .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px}
+#etvcHud .title{font-size:14px;font-weight:800;letter-spacing:1px}
+#etvcHud .etvc-status{font-size:10px;opacity:.75}
+#etvcHud .torque-block{margin:7px 0 4px}
+#etvcHud .torque-block .torque-section-title{margin:0 0 5px}
+#etvcHud .torque-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 12px}
+#etvcHud .torque-grid>div{min-width:0;display:flex;justify-content:space-between;gap:8px;align-items:center}
+#etvcHud .torque-value{white-space:nowrap;font-variant-numeric:tabular-nums}
+#etvcHud .engine-row{display:flex;justify-content:space-between;align-items:center;min-height:24px}
+#etvcHud .gear-panel{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;margin:5px 0 8px;padding:7px 9px;border-radius:8px;background:rgba(255,255,255,.07)}
+#etvcHud .gear-panel .gear-status{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums}
+#etvcHud .gear-panel .engine-rpm{font-size:10px;opacity:.72;font-variant-numeric:tabular-nums}
+#etvcHud .gear-panel .gear-hint{font-size:9px;opacity:.48}
+#etvcHud .line{display:grid;grid-template-columns:1fr auto;align-items:center;gap:14px;padding:3px 0;white-space:nowrap}
+#etvcHud .label{opacity:.58}
+#etvcHud .value{width:108px;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+#etvcHud .divider{height:1px;background:rgba(255,255,255,.12);margin:7px 0}
+#etvcHud .torque-section-title{font-size:10px;font-weight:700;letter-spacing:.7px;opacity:.75;margin:5px 0 4px}
+#etvcHud .wheel{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 18px;width:100%}
+#etvcHud .wheel>div{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;width:100%}
+#etvcHud .wheel>div>span:first-child{flex:0 0 24px}
+#etvcHud .torque-value{min-width:0;flex:1 1 auto;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+#etvcHud .etvc-toggle,#etvcHud .settings-toggle{margin-top:9px;width:100%;height:29px;padding:5px 8px;border-radius:7px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.07);color:#fff;cursor:pointer;font-size:10px}
+#etvcHud .settings-toggle{margin-top:6px;color:#bbb}
+#etvcHud .torque-settings{display:none;margin-top:7px;padding:9px 10px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10)}
+#etvcHud .torque-settings.open{display:block}
+#etvcHud .setting{display:flex;align-items:center;gap:8px;padding:4px 0;color:#ddd;cursor:pointer}
+#etvcHud .setting input{accent-color:#fff}
+#etvcHud .hint{margin-top:6px;font-size:9px;line-height:1.4;color:#888}
+#etvcHud .torque-empty{display:none;padding:5px 0;color:#777;font-size:10px}
+</style>
+<div id="etvcHud">
+<div class="head"><div class="title">e-TVC</div><div class="etvc-status">ACTIVE</div></div>
+<div class="gear-panel">
+  <span class="label">GEAR</span>
+  <span class="gear-status">D1</span>
+  <span class="engine-rpm">850 rpm</span>
+  <span class="gear-hint">Q / E</span>
+</div>
+<div class="line"><span class="label">TARGET YAW</span><span class="value etvc-yaw">0.0°/s</span></div>
+<div class="line"><span class="label">ACTUAL YAW</span><span class="value etvc-actual-yaw">0.0°/s</span></div>
+<div class="line"><span class="label">YAW ERROR</span><span class="value etvc-error">0.0°/s</span></div>
+<div class="line"><span class="label">TORQUE BIAS</span><span class="value etvc-correction">0.0%</span></div>
+<div class="divider"></div>
+<div class="torque-block engine-torque-block">
+  <div class="torque-section-title">ENGINE TORQUE</div>
+  <div class="engine-row"><span class="label">CRANKSHAFT</span><span class="torque-value engine-value">0 Nm</span></div>
+</div>
+
+<div class="torque-block drive-torque-block">
+  <div class="torque-section-title">DRIVE TORQUE</div>
+  <div class="torque-grid">
+    <div><span>FL</span><span class="torque-value drive-fl">0 Nm</span></div>
+    <div><span>FR</span><span class="torque-value drive-fr">0 Nm</span></div>
+    <div><span>RL</span><span class="torque-value drive-rl">0 Nm</span></div>
+    <div><span>RR</span><span class="torque-value drive-rr">0 Nm</span></div>
+  </div>
+  <div class="line"><span class="label">TOTAL</span><span class="value drive-total">0 Nm</span></div>
+</div>
+
+<div class="torque-block brake-torque-block">
+  <div class="torque-section-title">BRAKE TORQUE</div>
+  <div class="torque-grid">
+    <div><span>FL</span><span class="torque-value brake-fl">0 Nm</span></div>
+    <div><span>FR</span><span class="torque-value brake-fr">0 Nm</span></div>
+    <div><span>RL</span><span class="torque-value brake-rl">0 Nm</span></div>
+    <div><span>RR</span><span class="torque-value brake-rr">0 Nm</span></div>
+  </div>
+  <div class="line"><span class="label">TOTAL</span><span class="value brake-total">0 Nm</span></div>
+</div>
+
+<div class="torque-block tire-torque-block">
+  <div class="torque-section-title">TIRE TORQUE</div>
+  <div class="torque-grid">
+    <div><span>FL</span><span class="torque-value tire-fl">0 Nm</span></div>
+    <div><span>FR</span><span class="torque-value tire-fr">0 Nm</span></div>
+    <div><span>RL</span><span class="torque-value tire-rl">0 Nm</span></div>
+    <div><span>RR</span><span class="torque-value tire-rr">0 Nm</span></div>
+  </div>
+  <div class="line"><span class="label">TOTAL</span><span class="value tire-total">0 Nm</span></div>
+</div>
+
+<div class="line"><span class="label">WHEEL SPEED</span><span class="value wheel-speed">0.0 km/h</span></div>
+<div class="torque-empty">표시할 토크값을 설정하세요.</div>
+<button class="etvc-toggle" type="button">e-TVC: ON (CLICK)</button>
+<button class="settings-toggle" type="button">⚙ 토크 표시 설정</button>
+<div class="torque-settings">
+<label class="setting"><input id="showEngineTorque" type="checkbox"><span>엔진 토크 (Engine)</span></label>
+<label class="setting"><input id="showDriveTorque" type="checkbox"><span>구동 토크 (Drive)</span></label>
+<label class="setting"><input id="showBrakeTorque" type="checkbox"><span>제동 토크 (Brake)</span></label>
+<label class="setting"><input id="showTireTorque" type="checkbox"><span>타이어 토크 (Tire)</span></label>
+<div class="hint">
+엔진 토크 = 엔진 크랭크축에서 발생하는 토크<br>
+구동 토크 = 변속기/최종감속 후 바퀴에 요구되는 토크<br>
+제동 토크 = 풋브레이크/핸드브레이크/e-TVC가 바퀴에 가하는 토크<br>
+타이어 토크 = 타이어가 실제 노면에 전달하는 종방향 접촉 토크
+</div>
+</div>
+</div>
+<script src="../js/ui/etvcHud.js"></script>
+<div id="cameraHint">마우스 이동: 시점 회전 · 휠: 줌</div>
+<style>#cameraHint{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:100;padding:7px 11px;border-radius:8px;background:rgba(10,12,14,.65);color:#ddd;font:11px Arial,sans-serif;pointer-events:none}</style>
+<div id="mapStatus"></div>
+<style>#mapStatus{position:fixed;left:50%;top:12px;transform:translateX(-50%);z-index:100;padding:6px 10px;border-radius:7px;background:rgba(10,12,14,.55);color:#ddd;font:11px Arial,sans-serif;pointer-events:none}</style>
+</body>
+</html>

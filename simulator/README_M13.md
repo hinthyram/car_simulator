@@ -1,0 +1,1 @@
+M13: known-good 6.7 simulator base; camera-only addition; no physics initialization changes.

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CAR SIMULATOR</title>
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at top,#202831,#0d1014 58%);color:#f4f7fa;font-family:Arial,"Noto Sans KR",sans-serif}
+.wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px 20px}.panel{width:min(1050px,96vw);padding:48px;background:#151a20eF;border:1px solid #343c45;border-radius:22px;box-shadow:0 25px 90px #0009}
+.eyebrow{color:#6db7ff;font-size:13px;letter-spacing:.16em;font-weight:700}.hero h1{font-size:clamp(40px,7vw,72px);margin:10px 0 8px}.hero p{color:#aab4bf;margin:0;max-width:680px;line-height:1.6}
+.actions{display:flex;gap:12px;flex-wrap:wrap;margin:30px 0}.btn{border:1px solid #46515d;background:#252c34;color:#fff;border-radius:10px;padding:13px 18px;cursor:pointer;font:inherit}.btn:hover{background:#303943}.primary{background:#1479ff;border-color:#1479ff}.primary:hover{background:#2587ff}
+.quick{margin-top:32px;border-top:1px solid #30363d;padding-top:24px}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.card{padding:18px;border:1px solid #353e47;background:#10151a;border-radius:14px}.card h3{margin:0 0 7px}.small{color:#96a2ae;font-size:13px;line-height:1.5}
+</style>
+</head>
+<body><div class="wrap"><main class="panel">
+<section class="hero"><div class="eyebrow">PHYSICS-BASED DRIVING SIMULATOR</div><h1>CAR SIMULATOR</h1>
+<p>차량 물리, 타이어 모델, e-TVC와 타일 기반 지형을 사용하는 3D 주행 시뮬레이터.</p>
+<div class="actions">
+<button class="btn primary" onclick="location.href='pages/map-select.html'">시뮬레이션 시작</button>
+<button class="btn" onclick="location.href='map-editor/map-editor.html'">맵 만들기</button>
+</div></section>
+<section class="quick"><h2>빠른 시작</h2><div class="cards">
+<div class="card"><h3>평지</h3><div class="small">기본 차량 및 물리 테스트</div><button class="btn primary" style="margin-top:14px" onclick="location.href='simulator/simulation.html'">주행</button></div>
+<div class="card"><h3>오르막 / 내리막</h3><div class="small">중력과 경사면 테스트</div><button class="btn" style="margin-top:14px" onclick="location.href='simulator/simulation.html?terrain=slope'">주행</button></div>
+</div></section>
+</main></div></body></html>

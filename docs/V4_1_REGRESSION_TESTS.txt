@@ -1,0 +1,17 @@
+V4.1 automated regression summary
+
+PASS:
+- 7 JS syntax checks
+- startup state finite
+- D1 idle creep
+- W acceleration
+- 0-60 km/h Drive Torque contains no zero shift flicker
+- 0-60 km/h DCT remains in D1 until the calculated 1->2 shift point
+- 1->2 shift occurs once at approximately 68.6 km/h in the current baseline
+- coast
+- S brake
+- steering + W
+- e-TVC coast differential braking
+- Q/E range sequence: D -> N -> R -> P and back
+- stationary Real Tire Torque = 0
+- no NaN/Infinity in telemetry

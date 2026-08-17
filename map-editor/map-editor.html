@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Car Simulator — Map Editor M3</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#0d1014;color:#f2f5f8;font-family:Arial,"Noto Sans KR",sans-serif}
+#top{position:fixed;z-index:20;top:10px;left:10px;right:10px;min-height:52px;padding:8px;display:flex;gap:7px;align-items:center;background:#181c21ee;border:1px solid #343b43;border-radius:12px;backdrop-filter:blur(8px)}
+button,input{background:#252b32;color:#fff;border:1px solid #46505a;border-radius:7px;padding:8px 10px;font:inherit}
+button{cursor:pointer;transition:background .12s,border-color .12s,box-shadow .12s,transform .08s}
+button:hover{background:#303841}
+button:focus{outline:none;box-shadow:none}
+button:focus-visible{outline:2px solid rgba(22,131,255,.45);outline-offset:1px}.tile:focus,.tile:focus-visible{outline:none!important;box-shadow:none!important}
+button.active{border-color:#1683ff;background:#202b38;box-shadow:inset 0 0 0 1px rgba(22,131,255,.35)}
+.tile.active{box-shadow:none;border-color:#1683ff;background:#202b38}
+input:focus{outline:none;border-color:#5b8fc9;box-shadow:0 0 0 2px rgba(22,131,255,.12)}
+#layout{position:absolute;inset:0;display:flex}.panel{width:292px;flex:none;padding:82px 12px 16px;background:#171b20f7;border-right:1px solid #30363d;overflow:auto;z-index:10}
+.section{border-top:1px solid #30363d;padding:12px 0}.section:first-child{border-top:0}.row{display:flex;gap:6px;margin:7px 0}.row>*{flex:1}.section>b{font-size:16px}.small,.help{font-size:12px;color:#9da6b0;line-height:1.45}
+#tiles{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px}.tile{width:100%;text-align:left}.tile small{display:block;color:#aeb6bf;font-size:11px;margin-top:2px}
+#view{position:relative;flex:1;min-width:0}.viewCanvas{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab}.viewCanvas.drag{cursor:grabbing}
+#status{position:absolute;z-index:5;right:14px;bottom:14px;background:#171b20e8;border:1px solid #343b43;border-radius:9px;padding:9px 12px;font-size:12px}
+#error{display:none;position:absolute;z-index:50;left:50%;top:50%;transform:translate(-50%,-50%);max-width:600px;background:#24171a;border:1px solid #8b4149;border-radius:12px;padding:18px;line-height:1.5}
+</style>
+<style>
+.corner-row{display:grid!important;grid-template-columns:repeat(4,1fr);gap:6px}
+.fence-corner{min-height:48px;font-size:26px;line-height:22px}
+.fence-corner small{display:block;font-size:9px;line-height:12px;opacity:.7}
+.fence-corner.active{outline:2px solid #1d8cff;box-shadow:0 0 0 2px rgba(29,140,255,.18)}
+</style></head>
+<body>
+<div id="top">
+<button onclick="location.href='../index.html'">← 홈</button><button onclick="location.href='../pages/map-select.html'">맵 선택</button>
+<input id="name" value="새 맵" style="width:145px">
+<button id="newBtn">새 맵</button><button id="saveBtn">저장</button><button id="playBtn">테스트 주행</button>
+<button id="view3d" class="active">3D</button><button id="view2d">탑뷰</button>
+<span id="loaded" class="small"></span><span id="viewIndicator" class="small" style="margin-left:auto">3D · 위쪽 보기</span>
+</div>
+<div id="layout">
+<aside class="panel">
+<div class="section">
+<b>맵 크기</b>
+<div class="row"><input id="width" type="number" min="20" step="10" value="200"><input id="length" type="number" min="20" step="10" value="200"></div>
+<div class="row"><label class="small">타일 크기<input id="tileSize" type="number" min="2" step="1" value="10"></label><button id="applySize">적용</button></div>
+<div id="sizeStat" class="small"></div>
+</div>
+<div class="section"><b>타일 설치</b><div id="tiles"></div></div>
+<div class="section">
+<b>높이 편집</b>
+<div class="row"><button id="raise">+ 올리기</button><button id="lower">- 내리기</button></div>
+<div class="row"><input id="heightStep" type="number" min=".1" step=".1" value=".5"><button id="flat">전체 0m</button></div>
+</div>
+<div class="section">
+<b>시작 위치 / 방향</b>
+<div class="row"><button id="spawnMode">시작 위치 지정</button>
+<div class="help">버튼을 누른 뒤 맵을 클릭하면 차량 시작 위치가 지정됩니다.</div></div>
+<div class="row">
+  <input id="spawnYaw" type="number" min="0" max="359" step="1" value="0">
+  <span class="small" style="padding:9px 0">°</span>
+  <button id="spawnNorth">0°</button>
+</div>
+<div class="row">
+  <button id="spawnLeft">← 270°</button><button id="spawnRight">90° →</button>
+</div>
+<div class="help">차량 시작 위치를 클릭한 뒤 방향을 각도로 지정합니다. 0°=위쪽(+Z), 90°=오른쪽(+X).</div>
+</div>
+<div class="section">
+<b>구조물</b>
+<div class="row"><button class="obstacle" data-obstacle="fence">울타리</button><button class="obstacle" data-obstacle="tree">나무</button></div>
+<div class="row"><button id="fenceX">━ 가로</button><button id="fenceZ">┃ 세로</button></div>
+<div class="row corner-row">
+<button class="fence-corner" data-corner="nw">┌<small>NW</small></button>
+<button class="fence-corner" data-corner="ne">┐<small>NE</small></button>
+<button class="fence-corner" data-corner="sw">└<small>SW</small></button>
+<button class="fence-corner" data-corner="se">┘<small>SE</small></button>
+</div>
+<div class="row"><button id="obstacleErase">구조물 제거</button><button id="obstacleClear">전체 제거</button></div>
+<div class="help">선택한 구조물을 맵에 클릭하거나 드래그해서 배치합니다. 구조물은 차량이 통과할 수 없는 장애물로 저장됩니다.</div>
+</div>
+<div class="section">
+<button id="deleteMap" style="display:none;width:100%" class="danger">현재 맵 삭제</button>
+</div>
+<div class="section">
+<div class="help">
+왼쪽 클릭/드래그: 타일 칠하기 · 높이 편집 · 구조물 배치<br>
+Shift+왼쪽 드래그: 카메라 이동<br>
+마우스 휠: 확대 / 축소<br>
+빈 공간 드래그: 3D 회전
+</div>
+</div>
+</aside>
+<main id="view"><canvas id="canvas" class="viewCanvas"></canvas><div id="status">아스팔트 · μ 0.95</div><div id="error"></div></main>
+</div>
+
+<script type="module" src="../js/editor/mapEditor.js"></script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>맵 선택 — CAR SIMULATOR</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#0d1014;color:#f3f6f9;font-family:Arial,"Noto Sans KR",sans-serif}.wrap{max-width:1120px;margin:auto;padding:30px 20px}
+.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:26px}.top button,.card button{border:1px solid #46505a;background:#252b32;color:#fff;border-radius:8px;padding:9px 13px;cursor:pointer}.top h1{margin:0}.section{margin-top:24px}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}.card{background:#151a20;border:1px solid #343c45;border-radius:14px;padding:18px}.card h3{margin:0 0 7px}.small{color:#98a3ae;font-size:13px;line-height:1.5}.primary{background:#1479ff!important;border-color:#1479ff!important}.danger{border-color:#7e3e45!important;color:#ff9ea6!important}.actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:14px}.empty{padding:20px;border:1px dashed #3a424b;border-radius:12px;color:#929da8}
+</style></head><body><div class="wrap">
+<div class="top"><button onclick="location.href='../index.html'">← 홈</button><h1>맵 선택</h1><button onclick="location.href='../map-editor/map-editor.html'">+ 맵 만들기</button></div>
+<section class="section"><h2>기본 맵</h2><div class="grid">
+<div class="card"><h3>평지</h3><div class="small">기본 테스트 필드</div><div class="actions"><button class="primary" onclick="location.href='../simulator/simulation.html'">주행</button></div></div>
+<div class="card"><h3>오르막 / 내리막</h3><div class="small">경사와 중력 테스트</div><div class="actions"><button class="primary" onclick="location.href='../simulator/simulation.html?terrain=slope'">주행</button></div></div>
+</div></section>
+<section class="section"><h2>내 맵</h2><div id="maps" class="grid"></div></section>
+</div>
+<script type="module" src="../js/pages/mapSelect.js"></script></body></html>
