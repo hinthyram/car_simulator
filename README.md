@@ -1,16 +1,17 @@
-# CAR SIMULATOR V12
+# CAR SIMULATOR V13
 
 Web-based vehicle simulator with a modular physics engine, map editor, and server-backed map storage.
 
 ## Project status
 
-V12 is GitHub-ready.
+V13 is GitHub-ready and Render server deployment-ready.
 
 - V8: website flow
 - V9: code modularization
 - V10: canonical map schema
 - V11: Node.js + Express + SQLite map server
 - V12: GitHub repository structure, Git metadata, documentation, and GitHub Pages static-preview workflow
+- V13: Render Web Service deployment config, health endpoint, CORS, and configurable API base
 
 ## Run locally
 
@@ -80,3 +81,8 @@ Then enable GitHub Pages:
 Settings -> Pages -> Source: GitHub Actions.
 
 The included `.github/workflows/pages.yml` will deploy the static project on pushes to `main`.
+
+
+## V13 server deployment
+
+See `docs/RENDER_SERVER_V13.md`. The included `render.yaml` is a deployment blueprint for a Node.js Web Service.

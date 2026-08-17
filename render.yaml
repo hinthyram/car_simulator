@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: car-simulator-api
+    runtime: node
+    plan: free
+    branch: main
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: CORS_ORIGIN
+        value: https://hinthyram.github.io

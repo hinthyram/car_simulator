@@ -1,6 +1,7 @@
 import { normalizeMap, validateMap } from './mapSchema.js';
 
-const API='/api/maps';
+const API_BASE = (typeof window !== 'undefined' && window.CAR_SIM_API_BASE) ? String(window.CAR_SIM_API_BASE).replace(/\/$/, '') : '';
+const API = API_BASE + '/api/maps';
 let readyPromise=null;
 
 async function api(path='',options={}){
