@@ -41,7 +41,7 @@ app.use((req, res, next) => {
 app.get('/api/health', (req, res) => res.json({
   ok: true,
   service: 'car-simulator-api',
-  version: '13.0.0',
+  version: '14.0.0',
   time: new Date().toISOString()
 }));
 app.use('/api/maps', mapsRouter);

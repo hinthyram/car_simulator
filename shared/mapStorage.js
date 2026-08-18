@@ -1,6 +1,7 @@
 import { normalizeMap, validateMap } from './mapSchema.js';
+import { CAR_SIM_API_BASE as CONFIG_API_BASE } from './runtimeConfig.js';
 
-const API_BASE = (typeof window !== 'undefined' && window.CAR_SIM_API_BASE) ? String(window.CAR_SIM_API_BASE).replace(/\/$/, '') : '';
+const API_BASE = (typeof window !== 'undefined' && window.CAR_SIM_API_BASE) ? String(window.CAR_SIM_API_BASE).replace(/\/$/, '') : String(CONFIG_API_BASE || '').replace(/\/$/, '');
 const API = API_BASE + '/api/maps';
 let readyPromise=null;
 
