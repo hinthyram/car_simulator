@@ -12,13 +12,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: 20
-
       - name: Check JavaScript syntax
         shell: bash
         run: |
           set -e
           find js shared -name '*.js' -print0 | xargs -0 -n1 node --check
+

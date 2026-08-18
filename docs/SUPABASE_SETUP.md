@@ -1,18 +1,10 @@
-# Supabase 연결 설정
+# Supabase setup
 
-## 1. Project URL
+This build uses GitHub Pages for the static site and Supabase directly for user-created maps. Render/Node server files are not required.
 
-현재 프로젝트의 Project URL:
+## 1. Create `public.maps`
 
-```text
-https://vhjrxfuivfdtmwhcjwfr.supabase.co
-```
-
-REST API 주소가 `/rest/v1/`로 표시되는 경우 코드에서는 `/rest/v1/` 앞의 Project URL만 사용합니다.
-
-## 2. maps 테이블
-
-SQL Editor에서 다음을 실행합니다.
+Run the SQL below in Supabase SQL Editor:
 
 ```sql
 create table public.maps (
@@ -23,50 +15,27 @@ create table public.maps (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-```
 
-## 3. RLS
-
-```sql
 alter table public.maps enable row level security;
 
-create policy "Allow public map reading"
-on public.maps for select to anon using (true);
-
-create policy "Allow public map creation"
-on public.maps for insert to anon with check (true);
-
-create policy "Allow public map update"
-on public.maps for update to anon using (true) with check (true);
-
-create policy "Allow public map deletion"
-on public.maps for delete to anon using (true);
+create policy "Allow public map reading" on public.maps for select to anon using (true);
+create policy "Allow public map creation" on public.maps for insert to anon with check (true);
+create policy "Allow public map update" on public.maps for update to anon using (true) with check (true);
+create policy "Allow public map deletion" on public.maps for delete to anon using (true);
 ```
 
-위 정책은 테스트용입니다. 공개 서비스에서는 로그인 사용자별 소유권 정책으로 강화하세요.
+These policies are intentionally simple for the prototype. Add authentication and owner-based policies before public production use.
 
-## 4. Publishable key
+## 2. Set the frontend key
 
-Supabase Dashboard → Settings → API Keys → Publishable key에서 `sb_publishable_...` 키를 복사합니다.
+Edit `shared/runtimeConfig.js`:
 
-`shared/runtimeConfig.js`의 다음 부분에 붙여넣습니다.
+- `CAR_SIM_SUPABASE_URL`: project URL
+- `CAR_SIM_SUPABASE_PUBLISHABLE_KEY`: Supabase Publishable key (`sb_publishable_...`)
 
-```js
-export const CAR_SIM_SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_...';
-```
+Never put a Supabase Secret/service-role key in the repository.
 
-**Secret key / service_role key / DB 비밀번호는 브라우저 코드나 GitHub에 넣지 않습니다.**
+## 3. Data model
 
-## 5. 배포
-
-```bash
-git add .
-git commit -m "Migrate map storage to Supabase"
-git push
-```
-
-GitHub Pages Actions가 완료된 뒤 웹사이트에서 맵 선택 → 맵 만들기 → 저장 → 새로고침 순서로 테스트합니다.
-
-## 6. 확인
-
-Supabase Dashboard → Table Editor → `maps`에서 저장된 맵 행이 생기는지 확인합니다.
+User-created maps are stored as one JSONB document in `public.maps.data`.
+Built-in maps are static JSON files committed to GitHub and are not stored in Supabase.
