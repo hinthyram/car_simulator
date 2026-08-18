@@ -59,28 +59,26 @@ import * as THREE from 'three';
 
         const mapId = requestedMapId || null;
 
-// The vehicle simulator must not wait for the network/database.
-// Start immediately with the legacy terrain, then replace it with a saved
-// server map in the background when available.
+// Backend map loading is non-blocking. The simulator starts with the legacy
+// terrain immediately and swaps to a saved map only after it arrives.
 let terrain = new TestTerrain(terrainMode);
 let activeMap = null;
 let terrainVisual = terrain.addVisual(scene);
 let mapLoadState = 'local-fallback';
 let physics = null;
 
-const terrainModeEl = document.getElementById('terrainMode');
-terrainModeEl.textContent = terrainMode === 'slope'
-    ? 'FIELD: 오르막 / 내리막 테스트'
-    : 'FIELD: 평지 (기존 기본 필드)';
-
 if (terrainMode === 'slope') {
     plane.visible = false;
     grid.visible = false;
 }
 
+const terrainModeEl = document.getElementById('terrainMode');
+terrainModeEl.textContent = terrainMode === 'slope'
+    ? 'FIELD: 오르막 / 내리막 테스트'
+    : 'FIELD: 평지 (기존 기본 필드)';
+
 function applyLoadedMap(map) {
     if (!map || !Array.isArray(map.tiles) || !map.tiles.length) return false;
-
     const oldVisual = terrainVisual;
     activeMap = map;
     terrain = new CustomTerrain(activeMap);
@@ -88,11 +86,11 @@ function applyLoadedMap(map) {
 
     if (oldVisual?.group) {
         scene.remove(oldVisual.group);
-        oldVisual.group.traverse((obj) => {
-            if (obj.geometry) obj.geometry.dispose();
+        oldVisual.group.traverse(obj => {
+            if (obj.geometry) obj.geometry.dispose?.();
             if (obj.material) {
-                const materials = Array.isArray(obj.material) ? obj.material : [obj.material];
-                for (const mat of materials) mat.dispose?.();
+                const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+                mats.forEach(m => m.dispose?.());
             }
         });
     }
@@ -100,8 +98,6 @@ function applyLoadedMap(map) {
     plane.visible = false;
     grid.visible = false;
 
-    // If the physics object has already started, switch its terrain reference
-    // without restarting or replacing the vehicle physics engine.
     if (physics) {
         physics.terrain = terrain;
         if (activeMap.spawn) {
@@ -117,25 +113,17 @@ function applyLoadedMap(map) {
     terrainModeEl.textContent =
         'FIELD: ' + (activeMap.name || '사용자 맵') + ' · ' +
         (activeMap.grid?.cols || 0) + '×' + (activeMap.grid?.rows || 0);
-
     return true;
 }
 
-// Map loading is deliberately fire-and-forget. A backend outage must never
-// prevent the car, renderer, HUD, or physics engine from starting.
-(async () => {
+// Deliberately not awaited at module scope.
+void (async()=>{
     try {
         await MapStorage.init();
-        const loaded = mapId
-            ? await readMapById(mapId)
-            : await findLatestSavedMap();
-
-        if (applyLoadedMap(loaded)) {
-            mapLoadState = 'server-map';
-        }
-    } catch (err) {
-        mapLoadState = 'local-fallback';
-        console.warn('[CAR SIM] Map server unavailable; using default terrain.', err);
+        const loaded = mapId ? await readMapById(mapId) : await findLatestSavedMap();
+        if (applyLoadedMap(loaded)) mapLoadState = 'server-map';
+    } catch(err) {
+        console.warn('[CAR SIM] Map loading failed; continuing with default terrain.',err);
     }
 })();
 
