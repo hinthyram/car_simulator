@@ -6,19 +6,47 @@ const API = API_BASE + '/api/maps';
 let readyPromise=null;
 
 async function api(path='',options={}){
-  const res=await fetch(API+path,{
-    headers:{'Content-Type':'application/json',...(options.headers||{})},
-    ...options
-  });
-  if(!res.ok){
-    let message='Request failed';
-    try{const body=await res.json();message=body.error||message}catch(_){}
-    throw new Error(message);
+  const url=API+path;
+  let res;
+  try{
+    res=await fetch(url,{
+      headers:{'Content-Type':'application/json',...(options.headers||{})},
+      ...options
+    });
+  }catch(err){
+    const e=new Error(
+      `네트워크 요청 실패\nURL: ${url}\n` +
+      `원인: ${err?.message || 'Unknown network error'}\n` +
+      `CORS, HTTPS, Render URL 또는 브라우저 네트워크 차단을 확인하세요.`
+    );
+    e.code='NETWORK_ERROR';
+    e.url=url;
+    e.cause=err;
+    throw e;
   }
-  if(res.status===204) return null;
-  return res.json();
-}
 
+  const text=await res.text();
+  let body=null;
+  try{ body=text?JSON.parse(text):null; }catch(_){}
+
+  if(!res.ok){
+    const message=body?.error || text || res.statusText || 'Request failed';
+    const e=new Error(
+      `API 요청 실패\n` +
+      `HTTP: ${res.status} ${res.statusText}\n` +
+      `URL: ${url}\n` +
+      `응답: ${message}`
+    );
+    e.code='HTTP_ERROR';
+    e.status=res.status;
+    e.url=url;
+    e.responseBody=body ?? text;
+    throw e;
+  }
+
+  if(res.status===204) return null;
+  return body;
+}
 function localMaps(){
   const maps=[];
   for(let i=0;i<localStorage.length;i++){
@@ -91,3 +119,12 @@ export const MapStorage={
     }
   }
 };
+
+
+export function getMapApiDebugInfo(){
+  return {
+    apiBase: API_BASE,
+    apiUrl: API,
+    pageOrigin: typeof location !== 'undefined' ? location.origin : 'unknown'
+  };
+}
