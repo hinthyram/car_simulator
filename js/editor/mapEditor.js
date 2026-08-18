@@ -548,14 +548,14 @@ $("view2d").onclick=()=>{
 window.addEventListener("resize",resize);
 
 (async()=>{
-    const serverAvailable=await MapStorage.init();
-    try{
-        const saved=editingId?await mapFromStorage(editingId):null;
-        createTileButtons(); initMap(saved); resize();
-        if(!serverAvailable) $("status").textContent="오프라인 편집 모드 · 서버 저장은 연결 후 사용";
-    }catch(err){
-        createTileButtons(); initMap(null); resize();
-        console.warn("[CAR SIM] Map editor fallback mode.",err);
-        $("status").textContent="오프라인 편집 모드 · 서버 저장은 연결 후 사용";
-    }
+ let saved=null;
+ try{
+  await MapStorage.init();
+  saved=editingId?await mapFromStorage(editingId):null;
+ }catch(err){
+  console.warn("[CAR SIM] Map server unavailable; opening editor without remote map.",err);
+ }
+ createTileButtons();
+ initMap(saved);
+ resize();
 })();

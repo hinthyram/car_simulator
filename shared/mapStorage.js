@@ -46,43 +46,28 @@ export const MapStorage={
   async init(){
     if(!readyPromise){
       readyPromise=(async()=>{
-        try{
-          await api('');
-          backendAvailable=true;
-          await migrateLocalMaps();
-        }catch(err){
-          backendAvailable=false;
-          console.warn('[CAR SIM] Map server unavailable; using local fallback.',err);
-        }
-        return backendAvailable;
-      })();
+        await api('');
+        await migrateLocalMaps();
+      })().catch(err=>{readyPromise=null;throw err});
     }
     return readyPromise;
   },
 
   async list(){
     await this.init();
-    if(!backendAvailable) return localMaps();
-    try{
-      const data=await api('');
-      return (data.maps||[]).map(normalizeMap);
-    }catch(err){
-      backendAvailable=false;
-      return localMaps();
-    }
+    const data=await api('');
+    return (data.maps||[]).map(normalizeMap);
   },
 
   async get(id){
     if(!id) return null;
     await this.init();
-    if(!backendAvailable) return localMaps().find(m=>m.id===id)||null;
     try{
       const data=await api('/'+encodeURIComponent(id));
       return data.map?normalizeMap(data.map):null;
     }catch(err){
       if(/not found/i.test(err.message)) return null;
-      const local=localMaps().find(m=>m.id===id);
-      return local||null;
+      throw err;
     }
   },
 
@@ -91,36 +76,18 @@ export const MapStorage={
     const normalized=normalizeMap(map);
     const check=validateMap(normalized);
     if(!check.valid) throw new Error('Invalid map: '+check.errors.join(', '));
-
-    if(!backendAvailable){
-      localStorage.setItem('carSimMap:'+normalized.id,JSON.stringify(normalized));
-      return normalized;
-    }
-
     const exists=await this.get(normalized.id);
     const method=exists?'PUT':'POST';
     const path=exists?'/'+encodeURIComponent(normalized.id):'';
-    try{
-      const data=await api(path,{method,body:JSON.stringify(normalized)});
-      return normalizeMap(data.map);
-    }catch(err){
-      localStorage.setItem('carSimMap:'+normalized.id,JSON.stringify(normalized));
-      throw new Error('서버 저장에 실패했습니다. 로컬에는 임시 저장했습니다: '+err.message);
-    }
+    const data=await api(path,{method,body:JSON.stringify(normalized)});
+    return normalizeMap(data.map);
   },
 
   async remove(id){
     if(!id)return;
     await this.init();
-    if(!backendAvailable){
-      localStorage.removeItem('carSimMap:'+id);
-      return;
-    }
-    try{
-      await api('/'+encodeURIComponent(id),{method:'DELETE'});
-    }catch(err){
+    try{await api('/'+encodeURIComponent(id),{method:'DELETE'})}catch(err){
       if(!/not found/i.test(err.message)) throw err;
     }
-    localStorage.removeItem('carSimMap:'+id);
   }
 };

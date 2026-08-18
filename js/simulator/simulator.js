@@ -59,15 +59,15 @@ import * as THREE from 'three';
 
         const mapId = requestedMapId || null;
 
-// Backend map loading is non-blocking. The simulator starts with the legacy
-// terrain immediately and swaps to a saved map only after it arrives.
+// Keep the simulator independent from the network.
+// The original terrain/vehicle/physics startup happens immediately.
 let terrain = new TestTerrain(terrainMode);
 let activeMap = null;
 let terrainVisual = terrain.addVisual(scene);
 let mapLoadState = 'local-fallback';
 let physics = null;
 
-if (terrainMode === 'slope') {
+if (terrainMode === 'slope' || activeMap) {
     plane.visible = false;
     grid.visible = false;
 }
@@ -77,8 +77,11 @@ terrainModeEl.textContent = terrainMode === 'slope'
     ? 'FIELD: 오르막 / 내리막 테스트'
     : 'FIELD: 평지 (기존 기본 필드)';
 
+// Replace only the visual/terrain reference after a remote map arrives.
+// Never recreate the vehicle physics engine.
 function applyLoadedMap(map) {
     if (!map || !Array.isArray(map.tiles) || !map.tiles.length) return false;
+
     const oldVisual = terrainVisual;
     activeMap = map;
     terrain = new CustomTerrain(activeMap);
@@ -90,7 +93,7 @@ function applyLoadedMap(map) {
             if (obj.geometry) obj.geometry.dispose?.();
             if (obj.material) {
                 const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
-                mats.forEach(m => m.dispose?.());
+                mats.forEach(mat => mat.dispose?.());
             }
         });
     }
@@ -116,14 +119,15 @@ function applyLoadedMap(map) {
     return true;
 }
 
-// Deliberately not awaited at module scope.
-void (async()=>{
+// Background-only request. Failure is intentionally ignored so the simulator
+// remains usable when Render is sleeping/offline.
+void (async () => {
     try {
         await MapStorage.init();
         const loaded = mapId ? await readMapById(mapId) : await findLatestSavedMap();
         if (applyLoadedMap(loaded)) mapLoadState = 'server-map';
-    } catch(err) {
-        console.warn('[CAR SIM] Map loading failed; continuing with default terrain.',err);
+    } catch (err) {
+        console.warn('[CAR SIM] Map API unavailable; continuing with default terrain.', err);
     }
 })();
 
