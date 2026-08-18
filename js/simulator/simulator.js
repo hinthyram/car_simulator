@@ -58,37 +58,86 @@ import * as THREE from 'three';
         }
 
         const mapId = requestedMapId || null;
+
+// The vehicle simulator must not wait for the network/database.
+// Start immediately with the legacy terrain, then replace it with a saved
+// server map in the background when available.
+let terrain = new TestTerrain(terrainMode);
+let activeMap = null;
+let terrainVisual = terrain.addVisual(scene);
+let mapLoadState = 'local-fallback';
+let physics = null;
+
+const terrainModeEl = document.getElementById('terrainMode');
+terrainModeEl.textContent = terrainMode === 'slope'
+    ? 'FIELD: 오르막 / 내리막 테스트'
+    : 'FIELD: 평지 (기존 기본 필드)';
+
+if (terrainMode === 'slope') {
+    plane.visible = false;
+    grid.visible = false;
+}
+
+function applyLoadedMap(map) {
+    if (!map || !Array.isArray(map.tiles) || !map.tiles.length) return false;
+
+    const oldVisual = terrainVisual;
+    activeMap = map;
+    terrain = new CustomTerrain(activeMap);
+    terrainVisual = terrain.addVisual(scene);
+
+    if (oldVisual?.group) {
+        scene.remove(oldVisual.group);
+        oldVisual.group.traverse((obj) => {
+            if (obj.geometry) obj.geometry.dispose();
+            if (obj.material) {
+                const materials = Array.isArray(obj.material) ? obj.material : [obj.material];
+                for (const mat of materials) mat.dispose?.();
+            }
+        });
+    }
+
+    plane.visible = false;
+    grid.visible = false;
+
+    // If the physics object has already started, switch its terrain reference
+    // without restarting or replacing the vehicle physics engine.
+    if (physics) {
+        physics.terrain = terrain;
+        if (activeMap.spawn) {
+            physics.carModel.position.set(
+                Number(activeMap.spawn.x) || 0,
+                Number(activeMap.spawn.y) || terrain.heightAt(0, 0),
+                Number(activeMap.spawn.z) || 0
+            );
+            physics.carModel.rotation.y = Number(activeMap.spawn.yaw) || 0;
+        }
+    }
+
+    terrainModeEl.textContent =
+        'FIELD: ' + (activeMap.name || '사용자 맵') + ' · ' +
+        (activeMap.grid?.cols || 0) + '×' + (activeMap.grid?.rows || 0);
+
+    return true;
+}
+
+// Map loading is deliberately fire-and-forget. A backend outage must never
+// prevent the car, renderer, HUD, or physics engine from starting.
+(async () => {
+    try {
         await MapStorage.init();
-        let terrain = new TestTerrain(terrainMode);
-        let activeMap = await readMapById(mapId) || (mapId ? null : await findLatestSavedMap());
+        const loaded = mapId
+            ? await readMapById(mapId)
+            : await findLatestSavedMap();
 
-        async function loadMapTerrain(){
-            if(activeMap && Array.isArray(activeMap.tiles) && activeMap.tiles.length){
-                terrain = new CustomTerrain(activeMap);
-                return;
-            }
-            if(!mapId) return;
-            const saved=await readMapById(mapId);
-            if(saved && Array.isArray(saved.tiles)){
-                activeMap=saved;
-                terrain=new CustomTerrain(activeMap);
-            }
+        if (applyLoadedMap(loaded)) {
+            mapLoadState = 'server-map';
         }
-
-        await loadMapTerrain();
-        const terrainVisual = terrain.addVisual(scene);
-
-        if (terrainMode === 'slope' || activeMap) {
-            plane.visible = false;
-            grid.visible = false;
-        }
-
-        const terrainModeEl = document.getElementById('terrainMode');
-        terrainModeEl.textContent = activeMap
-            ? 'FIELD: ' + (activeMap.name || '사용자 맵') + ' · ' + (activeMap.grid?.cols || 0) + '×' + (activeMap.grid?.rows || 0)
-            : terrainMode === 'slope'
-                ? 'FIELD: 오르막 / 내리막 테스트'
-                : 'FIELD: 평지 (기존 기본 필드)';
+    } catch (err) {
+        mapLoadState = 'local-fallback';
+        console.warn('[CAR SIM] Map server unavailable; using default terrain.', err);
+    }
+})();
 
         document.getElementById('flatFieldBtn').addEventListener('click', () => {
             location.href = location.pathname;
@@ -98,7 +147,6 @@ import * as THREE from 'three';
         });
 
         // 4. 모듈 초기화 (물리 엔진 및 모델 로드)
-        let physics = null;
         const clock = new THREE.Clock();
 
         loadCarModel('../../simulator/car.glb', scene, (carModel, carParts) => {
