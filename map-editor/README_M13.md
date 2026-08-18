@@ -1,1 +1,0 @@
-M13: fixed tile/structure selection state; fence direction selection now updates correctly.

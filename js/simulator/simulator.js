@@ -120,7 +120,7 @@ function applyLoadedMap(map) {
 }
 
 // Background-only request. Failure is intentionally ignored so the simulator
-// remains usable when Render is sleeping/offline.
+// remains usable when the map service is unavailable.
 void (async () => {
     try {
         await MapStorage.init();

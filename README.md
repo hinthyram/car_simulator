@@ -1,88 +1,60 @@
-# CAR SIMULATOR V13
+# CAR SIMULATOR V15.5
 
-Web-based vehicle simulator with a modular physics engine, map editor, and server-backed map storage.
+GitHub Pages에서 실행되는 웹 기반 차량 시뮬레이터입니다. 맵 에디터와 차량 물리 엔진을 포함하며, 맵 저장소는 Supabase PostgreSQL을 직접 사용합니다.
 
-## Project status
+## 현재 구조
 
-V13 is GitHub-ready and Render server deployment-ready.
-
-- V8: website flow
-- V9: code modularization
-- V10: canonical map schema
-- V11: Node.js + Express + SQLite map server
-- V12: GitHub repository structure, Git metadata, documentation, and GitHub Pages static-preview workflow
-- V13: Render Web Service deployment config, health endpoint, CORS, and configurable API base
-
-## Run locally
-
-Requirements:
-- Node.js 20+
-- npm
-
-```bash
-npm install
-npm start
+```text
+GitHub Pages
+    ↓
+shared/mapStorage.js
+    ↓
+Supabase REST API
+    ↓
+public.maps (PostgreSQL)
 ```
 
-Open:
+Render, Node.js/Express 서버, SQLite는 맵 저장에 사용하지 않습니다.
 
-http://localhost:3000
+## Supabase 설정
 
-Do not open `index.html` with `file://`; the simulator uses the server API at `/api/maps`.
+1. Supabase 프로젝트를 만듭니다.
+2. `public.maps` 테이블을 생성합니다.
+3. RLS를 활성화하고 SELECT/INSERT/UPDATE/DELETE 정책을 설정합니다.
+4. Supabase Dashboard → Settings → API Keys에서 **Publishable key**를 확인합니다.
+5. `shared/runtimeConfig.js`의 `CAR_SIM_SUPABASE_PUBLISHABLE_KEY`에 Publishable key를 입력합니다.
+6. 실제 배포는 GitHub Pages Actions로 진행합니다.
 
-## Important: GitHub Pages vs server
+자세한 절차는 `docs/SUPABASE_SETUP.md`를 참고하세요.
 
-GitHub Pages can host the static frontend, but it cannot run the Node.js/Express API or SQLite database.
+## 로컬 테스트
 
-Therefore V12 provides a GitHub Pages workflow as a **static preview**. The full map-saving application still needs the Node.js server to be deployed to a backend host.
-
-For the full application:
-
-Browser -> Node.js/Express -> SQLite
-
-For a GitHub Pages preview:
-
-Browser -> GitHub Pages
-
-The Pages preview is not expected to persist maps through `/api/maps`.
-
-## API
-
-- GET `/api/maps`
-- GET `/api/maps/:id`
-- POST `/api/maps`
-- PUT `/api/maps/:id`
-- DELETE `/api/maps/:id`
-
-## Database
-
-The server creates:
-
-`data/maps.db`
-
-The database is intentionally ignored by Git. Back it up separately if it contains maps.
-
-## Repository
-
-Recommended default branch: `main`.
-
-After creating an empty GitHub repository, run:
+정적 파일 서버를 사용하면 됩니다. 예:
 
 ```bash
-git init
-git branch -M main
-git add .
-git commit -m "Initial CAR SIMULATOR V12"
-git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPOSITORY.git
-git push -u origin main
+python -m http.server 8000
 ```
 
-Then enable GitHub Pages:
-Settings -> Pages -> Source: GitHub Actions.
+그 후 `http://localhost:8000/`으로 접속합니다.
 
-The included `.github/workflows/pages.yml` will deploy the static project on pushes to `main`.
+## 맵 API
 
+프론트엔드의 `MapStorage`는 다음 Supabase 작업을 직접 수행합니다.
 
-## V13 server deployment
+- 맵 목록 조회
+- 맵 단건 조회
+- 맵 생성/업데이트
+- 맵 삭제
+- 기존 localStorage 맵의 1회 서버 이전
 
-See `docs/RENDER_SERVER_V13.md`. The included `render.yaml` is a deployment blueprint for a Node.js Web Service.
+## 보안
+
+`shared/runtimeConfig.js`에는 **Publishable key만** 넣어야 합니다.
+
+다음 키는 절대 넣으면 안 됩니다.
+
+- Supabase Secret key
+- `service_role` key
+- Database password
+
+Publishable key를 사용하는 대신 실제 서비스에서는 RLS 정책을 사용자별 권한으로 강화하는 것을 권장합니다.

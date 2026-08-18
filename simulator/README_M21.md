@@ -1,1 +1,0 @@
-M21: simulator supports fenceCorner NW/NE/SW/SE rendering and collision; fence yaw 0=horizontal, 90=vertical.
