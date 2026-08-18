@@ -141,7 +141,7 @@ void (async () => {
         // 4. 모듈 초기화 (물리 엔진 및 모델 로드)
         const clock = new THREE.Clock();
 
-        loadCarModel('../../simulator/car.glb', scene, (carModel, carParts) => {
+        loadCarModel('/car_simulator/simulator/car.glb', scene, (carModel, carParts) => {
             if (activeMap?.spawn) {
                 carModel.position.set(
                     Number(activeMap.spawn.x) || 0,
